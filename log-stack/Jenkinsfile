@@ -74,7 +74,7 @@ pipeline {
     }
   }
 }
-
+// Helper function to send notifications
 def notifyBuild(String status) {
   String message = "${env.JOB_NAME} #${env.BUILD_NUMBER} ${status}: ${env.BUILD_URL}"
 
