@@ -1,0 +1,93 @@
+pipeline {
+  agent any
+
+  triggers {
+    githubPush()
+  }
+
+  environment {
+    APP_DIR = 'app'
+    DOCKER_IMAGE = "log-stack-app:${env.BUILD_NUMBER}"
+  }
+
+  options {
+    timestamps()
+  }
+
+  stages {
+    stage('Checkout') {
+      steps {
+        checkout scm
+      }
+    }
+
+    stage('Build') {
+      steps {
+        dir("${env.APP_DIR}") {
+          bat 'npm ci'
+          bat 'npm run build'
+          bat 'docker build -t %DOCKER_IMAGE% .'
+        }
+      }
+    }
+
+    stage('Test') {
+      steps {
+        dir("${env.APP_DIR}") {
+          bat 'npm test'
+        }
+      }
+    }
+
+    stage('Deploy') {
+      steps {
+        dir("${env.APP_DIR}") {
+          bat 'docker compose up -d --build app'
+        }
+      }
+    }
+
+    stage('Notify') {
+      steps {
+        script {
+          notifyBuild('SUCCESS')
+        }
+      }
+    }
+  }
+
+  post {
+    failure {
+      script {
+        notifyBuild('FAILURE')
+      }
+    }
+    unstable {
+      script {
+        notifyBuild('UNSTABLE')
+      }
+    }
+    aborted {
+      script {
+        notifyBuild('ABORTED')
+      }
+    }
+  }
+}
+
+def notifyBuild(String status) {
+  String message = "${env.JOB_NAME} #${env.BUILD_NUMBER} ${status}: ${env.BUILD_URL}"
+
+  
+
+  if (env.NOTIFY_EMAILS?.trim()) {
+    emailext(
+      subject: "Jenkins build ${status}: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+      body: message,
+      to: env.NOTIFY_EMAILS
+    )
+    return
+  }
+
+  echo "Notification skipped because neither Slack nor email recipients are configured. ${message}"
+}
