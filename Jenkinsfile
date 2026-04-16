@@ -6,27 +6,27 @@ pipeline {
         stage('Checkout') {
             steps {
                 echo "Cloning repo..."
-                git 'https://github.com/kishore18trs-alt/logging-stack.git'
+                git branch: 'main', url: 'https://github.com/kishore18trs-alt/logging-stack.git'
             }
         }
 
         stage('Build') {
             steps {
-                echo "Starting Docker services..."
+                echo "Starting logging stack..."
                 sh 'docker-compose up -d'
             }
         }
 
         stage('Test') {
             steps {
-                echo "Checking running containers..."
+                echo "Checking containers..."
                 sh 'docker ps'
             }
         }
 
         stage('Deploy') {
             steps {
-                echo "Logging stack deployed!"
+                echo "Logging stack deployed successfully 🚀"
             }
         }
     }
